@@ -1,10 +1,3 @@
-extern crate md2tex;
-extern crate mdbook;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate tectonic;
-
 use md2tex::markdown_to_tex;
 use mdbook::book::BookItem;
 use mdbook::renderer::RenderContext;
@@ -15,7 +8,7 @@ use pulldown_cmark::{Event, Options, Parser, Tag, LinkType, CowStr};
 use pulldown_cmark_to_cmark::cmark;
 
 // config definition.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(default, rename_all = "kebab-case")]
 pub struct LatexConfig {
     // Chapters that will not be exported.
@@ -34,7 +27,12 @@ pub struct LatexConfig {
     pub custom_template: Option<String>,
 
     // Date to be used in the LaTeX \date{} macro
-    pub date: Option<String>,
+    #[serde(default = "today")]
+    pub date: String,
+}
+
+fn today() -> String {
+    r#"\today"#.to_owned()
 }
 
 impl Default for LatexConfig {
@@ -42,15 +40,16 @@ impl Default for LatexConfig {
         Self {
             ignores: Default::default(),
             latex: true,
-            pdf: false,
-            markdown: false,
+            pdf: true,
+            markdown: true,
             custom_template: None,
-            date: Some(r#"\today"#.to_string()),
+            date: today(),
         }
     }
 }
 
-fn main() -> io::Result<()> {
+fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
+    println!("MDBOOK TECTONIC IS INVOKED");
     let mut stdin = io::stdin();
 
     // Get markdown source from the mdbook command via stdin
@@ -71,7 +70,8 @@ fn main() -> io::Result<()> {
     // Read book's config values (title, authors).
     let title = ctx.config.book.title.clone().unwrap();
     let authors = ctx.config.book.authors.join(" \\and ");
-
+    let date = cfg.date.clone();
+    
     // Copy template data into memory.
     let mut template = if let Some(custom_template) = cfg.custom_template {
             let mut custom_template_path = ctx.root.clone();
@@ -99,7 +99,7 @@ fn main() -> io::Result<()> {
             }
 
             // Add chapter path to relative links.
-            content.push_str(&traverse_markdown(&ch.content, &ch.path.parent().unwrap(), &ctx));
+            content.push_str(&traverse_markdown(&ch.content, ch.path.as_ref().unwrap().parent().unwrap(), &ctx));
         }
     }
 
@@ -111,10 +111,10 @@ fn main() -> io::Result<()> {
 
     if cfg.latex || cfg.pdf {
         // convert markdown data to LaTeX
-        latex.push_str(&markdown_to_tex(content));
+        latex.push_str(&markdown_to_tex(content)?);
 
-        // Insert new LaTeX data into template after "%% mdbook-latex begin".
-        let begin = "mdbook-latex begin";
+        // Insert new LaTeX data into template after "%% mdbook-tectonic begin".
+        let begin = "mdbook-tectonic begin";
         let pos = template.find(&begin).unwrap() + begin.len();
         template.insert_str(pos, &latex);
     }
@@ -131,21 +131,30 @@ fn main() -> io::Result<()> {
 
     // Output PDF file.
     if cfg.pdf {
+        
+        // let mut input = tempfile::NamedTempFile::new()?;
+        // input.write(template.as_bytes())?;
+        
         // Write PDF with tectonic.
         println!("Writing PDF with Tectonic...");
-        let pdf_data: Vec<u8> = tectonic::latex_to_pdf(&template).expect("processing failed");
-        println!("Output PDF size is {} bytes", pdf_data.len());
-
-        let mut pos = 0;
-
-        let mut file_pdf = title;
-        file_pdf.push_str(".pdf");
-        let mut buffer = File::create(&file_pdf)?;
-
-        while pos < pdf_data.len() {
-            let bytes_written = buffer.write(&pdf_data[pos..])?;
-            pos += bytes_written;
+        // FIXME launch tectonic process
+        let tectonic = which::which("tectonic")?;
+        let mut child = std::process::Command::new(tectonic)
+        .arg("--outfmt=pdf")
+        .arg(format!("-o={}", std::env::current_dir()?.display()))
+        .arg("-")
+        .stdin(std::process::Stdio::piped())
+        .spawn()?;
+        {
+        let mut tectonic_stdin = child.stdin.as_mut().unwrap();
+        let mut tectonic_writer = std::io::BufWriter::new(&mut tectonic_stdin);
+        tectonic_writer.write(template.as_bytes())?;
         }
+        if child.wait()?.code().unwrap() != 0 {
+            panic!("BAAAAAAAAD");
+        }
+        // let pdf_data: Vec<u8> = tectonic::latex_to_pdf(&template).expect("processing failed");
+        // println!("Output PDF size is {} bytes", pdf_data.len());
     }
 
     Ok(())
@@ -199,7 +208,7 @@ fn traverse_markdown(content: &str, chapter_path: &Path, context: &RenderContext
         });
     let mut new_content = String::new();
 
-    cmark(parser, &mut new_content, None).expect("failed to convert back to markdown");
+    cmark(parser, &mut new_content).expect("failed to convert back to markdown");
     return new_content;
 }
 
@@ -263,4 +272,5 @@ mod test {
         fs::remove_dir_all("/tmp/test").unwrap();
         fs::remove_dir_all("/tmp/dest").unwrap();
     }
+    
 }
