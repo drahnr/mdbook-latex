@@ -1,7 +1,7 @@
 [package]
 name = "mdbook-tectonic"
 description = "An mdbook backend for generating LaTeX and PDF documents."
-version = "0.2.0"
+version = "0.3.0-beta.1"
 authors = [
   "lbeckman314 <liam@liambeckman.com>",
   "Bernhard Schuster <bernhard@ahoi.io>",
