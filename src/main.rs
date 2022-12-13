@@ -1,10 +1,10 @@
 use cmark2tex::markdown_to_tex;
+use color_eyre::eyre::bail;
 use fs::OpenOptions;
 use fs_err as fs;
 use mdbook::book::BookItem;
 use mdbook::renderer::RenderContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Options, Parser, Tag};
-use pulldown_cmark_to_cmark::cmark;
 use std::io::{self, BufReader, Write};
 use std::path::Path;
 use std::path::PathBuf;
@@ -143,8 +143,13 @@ fn main() -> color_eyre::Result<()> {
         latex.push_str(&markdown_to_tex(content)?);
 
         // Insert new LaTeX data into template after "%% mdbook-tectonic begin".
-        let begin = "mdbook-tectonic begin";
-        let pos = template.find(&begin).unwrap() + begin.len();
+        const BEGIN: &str = "mdbook-tectonic begin";
+        let pos = if let Some(pos) = template.find(&BEGIN) {
+            pos
+        } else {
+            bail!("Missing injection point `%% {}` in tex template", BEGIN);
+        } + BEGIN.len();
+
         template.insert_str(pos, &latex);
 
         if cfg.latex {
@@ -158,25 +163,28 @@ fn main() -> color_eyre::Result<()> {
             // input.write(template.as_bytes())?;
 
             // Write PDF with tectonic.
-            println!("Writing PDF with Tectonic...");
+            let cwd = std::env::current_dir()?;
+            println!("Writing PDF to {} with Tectonic...", cwd.display());
             // FIXME launch tectonic process
             let tectonic = which::which("tectonic")?;
             let mut child = std::process::Command::new(tectonic)
                 .arg("--outfmt=pdf")
-                .arg(format!("-o={}", std::env::current_dir()?.display()))
+                .arg(format!("-o={}", cwd.display()))
                 .arg("-")
                 .stdin(std::process::Stdio::piped())
                 .spawn()?;
             {
                 let mut tectonic_stdin = child.stdin.as_mut().unwrap();
-                let mut tectonic_writer = std::io::BufWriter::new(&mut tectonic_stdin);
-                tectonic_writer.write(template.as_bytes())?;
+                let mut tectonic_stdin = std::io::BufWriter::new(&mut tectonic_stdin);
+                tectonic_stdin.write(template.as_bytes())?;
             }
-            if child.wait()?.code().unwrap() != 0 {
-                panic!("BAAAAAAAAD");
+            if let Some(retval) = child.wait()?.code() {
+                if retval != 0 {
+                    bail!("Subprocess `tectonic` terminated with exit code {}", retval)
+                }
+            } else {
+                bail!("Failed to launch subprocess `tectonic`")
             }
-            // let pdf_data: Vec<u8> = tectonic::latex_to_pdf(&template).expect("processing failed");
-            // println!("Output PDF size is {} bytes", pdf_data.len());
         }
     }
 
@@ -192,6 +200,10 @@ fn output_markdown<P: AsRef<Path>>(
     data: &str,
     destination: P,
 ) -> Result<(), io::Error> {
+    // the title might contain a lot of stuff, so limit it to sane chars
+    let re = regex::Regex::new("[^A-Za-z0-9_-]").expect("Parses just fine. qed");
+    let filename = str::replace(filename, move |c: char| re.is_match(&c.to_string()), "");
+
     let mut path = PathBuf::from(filename);
     path.set_extension(extension);
 
@@ -239,7 +251,8 @@ fn traverse_markdown(content: &str, chapter_path: &Path, context: &RenderContext
     });
     let mut new_content = String::new();
 
-    cmark(parser, &mut new_content).expect("failed to convert back to markdown");
+    pulldown_cmark_to_cmark::cmark(parser, &mut new_content)
+        .expect("Event mod is minimal, must work. qed");
     return new_content;
 }
 
