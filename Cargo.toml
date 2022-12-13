@@ -2,7 +2,10 @@
 name = "mdbook-tectonic"
 description = "An mdbook backend for generating LaTeX and PDF documents."
 version = "0.2.0"
-authors = ["lbeckman314 <liam@liambeckman.com>", "Bernhard Schuster <bernhard@ahoi.io>"]
+authors = [
+  "lbeckman314 <liam@liambeckman.com>",
+  "Bernhard Schuster <bernhard@ahoi.io>",
+]
 repository = "https://github.com/drahnr/mdbook-tectonic"
 license = "MPL-2.0"
 readme = "README.md"
@@ -11,7 +14,7 @@ edition = "2021"
 msrv = "1.60.0"
 
 [dependencies]
-mdbook = "0.4"
+mdbook = "0.4.22"
 pulldown-cmark = "0.9"
 pulldown-cmark-to-cmark = "*"
 serde = "1.0.104"
@@ -19,3 +22,5 @@ serde_derive = "1.0.104"
 md2tex = { path = "../md2tex" }
 which = "4"
 tempfile = "3"
+semver = "1"
+fs-err = "2.9"

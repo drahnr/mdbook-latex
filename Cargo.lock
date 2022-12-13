@@ -1306,10 +1306,12 @@ dependencies = [
 name = "mdbook-tectonic"
 version = "0.2.0"
 dependencies = [
+ "fs-err",
  "md2tex",
  "mdbook",
  "pulldown-cmark",
  "pulldown-cmark-to-cmark",
+ "semver",
  "serde",
  "serde_derive",
  "tempfile",
@@ -2050,6 +2052,12 @@ name = "scratch"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
+
+[[package]]
+name = "semver"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e25dfac463d778e353db5be2449d1cce89bd6fd23c9f1ea21310ce6e5a1b29c4"
 
 [[package]]
 name = "serde"
