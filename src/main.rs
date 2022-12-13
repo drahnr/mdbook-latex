@@ -1,11 +1,11 @@
+use cmark2tex::markdown_to_tex;
 use fs::OpenOptions;
 use fs_err as fs;
-use md2tex::markdown_to_tex;
 use mdbook::book::BookItem;
 use mdbook::renderer::RenderContext;
 use pulldown_cmark::{CowStr, Event, LinkType, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::cmark;
-use std::io::{self, BufReader, Read, Write};
+use std::io::{self, BufReader, Write};
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -53,12 +53,18 @@ impl Default for LatexConfig {
     }
 }
 
-fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
+#[derive(thiserror::Error, Debug)]
+#[error("Failed to parse STDIN as `RenderContext` JSON: {0:?}")]
+struct Error(#[from] mdbook::errors::Error);
+
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+
     // eprintln!("MDBOOK TECTONIC IS INVOKED");
     let stdin = BufReader::new(io::stdin());
 
     // Get markdown source from the mdbook command via stdin
-    let ctx = RenderContext::from_json(stdin)?;
+    let ctx = RenderContext::from_json(stdin).map_err(Error)?;
 
     let compiled_against = semver::VersionReq::parse(mdbook::MDBOOK_VERSION)?;
     let running_against = semver::Version::parse(ctx.version.as_str())?;
