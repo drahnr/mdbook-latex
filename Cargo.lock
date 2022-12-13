@@ -910,7 +910,7 @@ dependencies = [
 
 [[package]]
 name = "mdbook-tectonic"
-version = "0.3.0-beta.2"
+version = "0.3.0-beta.3"
 dependencies = [
  "cmark2tex",
  "color-eyre",
