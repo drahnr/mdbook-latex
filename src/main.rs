@@ -60,7 +60,11 @@ struct Error(#[from] mdbook::errors::Error);
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
-    // eprintln!("MDBOOK TECTONIC IS INVOKED");
+    use env_logger::Builder;
+    use log::LevelFilter;
+    let mut builder = Builder::from_default_env();
+    builder.filter(None, LevelFilter::Debug).init();
+
     let stdin = BufReader::new(io::stdin());
 
     // Get markdown source from the mdbook command via stdin
@@ -71,7 +75,7 @@ fn main() -> color_eyre::Result<()> {
     if !compiled_against.matches(&running_against) {
         // We should probably use the `semver` crate to check compatibility
         // here...
-        eprintln!(
+        log::warn!(
             "Warning: The {} output was built against version {} of mdbook, \
              but we're being called from version {}",
             "tectonic",
@@ -128,7 +132,7 @@ fn main() -> color_eyre::Result<()> {
                 &ch.content,
                 ch.path.as_ref().unwrap().parent().unwrap(),
                 &ctx,
-            ));
+            )?);
         }
     }
 
@@ -224,68 +228,77 @@ fn output_markdown<P: AsRef<Path>>(
 /// Changes done:
 ///   * change image paths to be relative to images
 ///   * copy the image files into the images directory in the target directory
-fn traverse_markdown(content: &str, chapter_path: &Path, context: &RenderContext) -> String {
+fn traverse_markdown(
+    content: &str,
+    chapter_path: &Path,
+    context: &RenderContext,
+) -> std::io::Result<String> {
     let parser = Parser::new_ext(content, Options::all());
-    let parser = parser.map(|event| match event {
-        Event::Start(Tag::Image(link_type, path, title)) => {
-            //Event::Start(Tag::Image(link_type, imagepathcowstr, title))
-            Event::Start(parse_image_tag(
-                link_type,
-                path,
-                title,
-                chapter_path,
-                context,
-            ))
-        }
-        Event::End(Tag::Image(link_type, path, title)) => {
-            //Event::Start(Tag::Image(link_type, imagepathcowstr, title))
-            Event::End(parse_image_tag(
-                link_type,
-                path,
-                title,
-                chapter_path,
-                context,
-            ))
-        }
-        _ => event,
-    });
+    let parser = parser
+        .map(|event| {
+            Ok(match event {
+                Event::Start(Tag::Image(link_type, path, title)) => {
+                    //Event::Start(Tag::Image(link_type, imagepathcowstr, title))
+                    Event::Start(parse_image_tag(
+                        link_type,
+                        path,
+                        title,
+                        chapter_path,
+                        context,
+                    )?)
+                }
+                Event::End(Tag::Image(link_type, path, title)) => {
+                    //Event::Start(Tag::Image(link_type, imagepathcowstr, title))
+                    Event::End(parse_image_tag(
+                        link_type,
+                        path,
+                        title,
+                        chapter_path,
+                        context,
+                    )?)
+                }
+                _ => event,
+            })
+        })
+        .collect::<std::io::Result<Vec<Event>>>()?;
     let mut new_content = String::new();
 
-    pulldown_cmark_to_cmark::cmark(parser, &mut new_content)
+    pulldown_cmark_to_cmark::cmark(parser.into_iter(), &mut new_content)
         .expect("Event mod is minimal, must work. qed");
-    return new_content;
+    Ok(new_content)
 }
 
+/// Take the values of a Tag::Image and create a new Tag::Image
+/// while simplyfying the path and also copying the image file to the target directory
 fn parse_image_tag<'a>(
     link_type: LinkType,
     path: CowStr<'a>,
     title: CowStr<'a>,
     chapter_path: &'a Path,
     context: &'a RenderContext,
-) -> Tag<'a> {
-    //! Take the values of a Tag::Image and create a new Tag::Image
-    //! while simplyfying the path and also copying the image file to the target directory
-
+) -> std::io::Result<Tag<'a>> {
     // cleaning and converting the path found.
     let pathstr: String = path.replace("./", "");
-    let imagefn = Path::new(&pathstr);
+    let imagefn = dbg!(Path::new(&pathstr));
     // creating the source path of the mdbook
-    let source = context.root.join(context.config.book.src.clone());
+    let source = dbg!(&context.root).join(dbg!(&context.config.book.src));
     // creating the relative path of the image by prepending the chapterpath
 
-    let relpath = chapter_path.join(imagefn);
+    // let relpath = chapter_path.join(imagefn);
     // creating the path of the imagesource
-    let sourceimage = source.join(&relpath);
+    let sourceimage = source.join(&imagefn);
     // creating the relative path for the image tag in markdown
     let imagepath = Path::new("images").join(&relpath);
     // creating the path where the image will be copied to
-    let targetimage = context.destination.join(&imagepath);
+    let targetimage = dbg!(&context.destination).join(&imagepath);
 
-    // creating the directory if neccessary
-    fs::create_dir_all(targetimage.parent().unwrap()).expect("Failed to create the directories");
+    // // creating the directory if neccessary
+    fs::create_dir_all(targetimage.parent().unwrap())?;
     // copy the image
-    fs::copy(&sourceimage, &targetimage).expect("Failed to copy the image");
+    fs::copy(&sourceimage, &targetimage)?;
+
+    log::debug!("Copying {} -> {}", sourceimage.display(), targetimage.display());
     // create the new image
-    let imagepathc: String = imagepath.to_str().unwrap().into();
-    Tag::Image(link_type, imagepathc.into(), title)
+    let imagepathc = imagepath.to_str().unwrap().to_owned();
+    Ok(Tag::Image(link_type, imagepathc.into(), title))
 }

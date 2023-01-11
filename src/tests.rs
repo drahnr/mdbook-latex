@@ -20,7 +20,7 @@ fn test_traverse_markdown() {
         mdbook::Config::default(),
         Path::new("/tmp/dest/"),
     );
-    let new_content = traverse_markdown(content, &path, &context);
+    let new_content = traverse_markdown(content, &path, &context).unwrap();
     assert_eq!("![123](images/chap/xyz.png)", new_content);
     let respath = Path::new("/tmp/dest/images/chap/xyz.png");
     assert!(respath.exists());

@@ -252,8 +252,6 @@ dependencies = [
 [[package]]
 name = "cmark2tex"
 version = "0.3.0-beta.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa27e141975014bf4929a6e63476d5a91b11cd89d8e4caeffa44af5d2dd00dde"
 dependencies = [
  "Inflector",
  "clap 4.0.29",
@@ -914,7 +912,9 @@ version = "0.3.0-beta.3"
 dependencies = [
  "cmark2tex",
  "color-eyre",
+ "env_logger 0.10.0",
  "fs-err",
+ "log",
  "mdbook",
  "pulldown-cmark",
  "pulldown-cmark-to-cmark",
