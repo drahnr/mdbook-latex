@@ -1,12 +1,7 @@
 # mdbook-tectonic
 
-![mdbook-tectonic logo][logo]
-
-[logo]: mdbook-tectonic.png
-
 [![crates badge][crates-badge]][crates.io]
 [![docs badge][docs-badge]][docs]
-[![ci badge][ci-badge]][ci]
 [![source badge][source-badge]][source]
 
 [crates.io]: https://crates.io/crates/mdbook-tectonic
@@ -15,10 +10,7 @@
 [docs]: https://docs.rs/crate/mdbook-tectonic
 [docs-badge]: https://docs.rs/mdbook-tectonic/badge.svg
 
-[ci]: https://travis-ci.org/drahnr/mdbook-tectonic
-[ci-badge]: https://img.shields.io/travis/drahnr/mdbook-tectonic
-
-[source]: https://github.com/lbeckman314/mdbook-tectonic
+[source]: https://github.com/drahnr/mdbook-tectonic
 [source-badge]: https://img.shields.io/badge/source-github-blue
 
 <!-- toc -->
@@ -29,22 +21,15 @@
 - [Primary Dependencies](#primary-dependencies)
 - [How's it Work?](#hows-it-work)
 - [Contributing](#contributing)
-  * [I found a problem. Should I create an issue with `mdbook-tectonic` or `md2tex`?](#i-found-a-problem-should-i-create-an-issue-with-mdbook-tectonic-or-md2tex)
+  - [I found a problem. Should I create an issue with `mdbook-tectonic` or `md2tex`?](#i-found-a-problem-should-i-create-an-issue-with-mdbook-tectonic-or-md2tex)
 - [Are We Stable Yet?](#are-we-stable-yet)
-- [See Also](#see-also)
-- [`mdbook-tectonic` failed to build my book! Now what? >:(](#mdbook-tectonic-failed-to-build-my-book-now-what-)
-  * [Automatic Approach](#automatic-approach)
-  * [Manual Approach](#manual-approach)
-  * [Finally](#finally)
-- [Status of Binary Releases](#status-of-binary-releases)
+  - [Manual Approach](#manual-approach)
+  - [Finally](#finally)
 
 <!-- tocstop -->
 
 An [mdbook](https://github.com/rust-lang-nursery/mdBook) backend for generating LaTeX and PDF documents. Utilizes [`md2tex`](https://github.com/lbeckman314/md2tex) for the markdown to LaTeX transformation, but with the goal of allowing alternative markdown to LaTeX converters. If you have developed your own markdown to LaTeX converter, I'd love to talk with you or share ideas! I'm at [liam@liambeckman.com](mailto:liam@liambeckman).
 
-> **Warning**: Not yet stable — may eat, shred, and atomize your laundry! See the [**Are We Stable Yet?**](#are-we-stable-yet%3F) section for a roadmap to the production release.
-
-> **Failure**: For what to do if and when `mdbook-tectonic` fails, see [**`mdbook-tectonic` failed to build my book! Now what? >:(**](#mdbook-tectonic-failed-to-build-my-book-now-what-). I'm also available via [e-mail](mailto:liam@liambeckman) if you have any questions or suggestions!
 
 ## Status of Rust Bookshelf
 
@@ -215,34 +200,6 @@ Below is a list of features I am currently working on (loosely in a "top-down" d
 - [ ] Add option to generate PDF with [mdproof](https://github.com/Geemili/mdproof) to skip LaTeX dependencies.
 - [ ] Complete acordance with the [CommonMark spec](https://spec.commonmark.org/).
 
-## See Also
-
-The following projects served as guidance for `mdbook-tectonic` (or are simply cool enough that they deserve to be shared!):
-
-- [mdbook-epub](https://github.com/Michael-F-Bryan/mdbook-epub): A backend for mdbook that creates EPUB files.
-- [mdbook-linkcheck](https://github.com/Michael-F-Bryan/mdbook-linkcheck): A backend for `mdbook` that will verify URL links.
-- [LaTeX-rs](https://github.com/Michael-F-Bryan/latex-rs): A cool library for programmatic LaTeX generation that I hope to eventually incorporate.
-- [crowbook](https://github.com/lise-henry/crowbook/): A rich program that can generate HTML, PDF, **and** EPUB files from markdown code. Has a neat [online demo page](http://vps.crowdagger.fr/crowbook/) to try it out interactively. Similar in some respects to `mdbook`, but with an added focus on "novels and fiction". Though general enough to handle a lot of different projects.
-- [no starch press](https://nostarch.com/Rust2018): *The Rust Programming Language* made professionally by a proper publishing company. Guranteed to have fewer errors than `mdbook-tectonic`!
-- [lumpy-leandoc](https://github.com/ratmice/lumpy-leandoc): A more elegant approach to markdown-LaTeX conversion via `pulldown_cmark` than that currently provided by `md2tex`. Also includes parallelism via [Rayon](https://github.com/rayon-rs/rayon) and syntax highlighting via [syntect](https://github.com/trishume/syntect)!
-
-## `mdbook-tectonic` failed to build my book! Now what? >:(
-
-### Automatic Approach
-
-Oops! That means I still have more work to do. If you **absolutely need your PDF right now**, then the quicket option is to select the `print` icon in the upper right corner of the online page of your book.
-
-Another method is to run the markdown file through an alternative markdown to LaTeX converter like [`pandoc`](https://pandoc.org/):
-
-```sh
-pandoc --from markdown --to latex book/latex/MY_BOOK.md -o book/latex/MY_BOOK.pdf
-```
-
-Or run it through a free (as in free parking) online solution:
-- https://www.markdowntopdf.com/
-- https://md2pdf.netlify.com/
-- https://dillinger.io/
-
 ### Manual Approach
 
 If, however, you don't mind getting your hands dirty with LaTeX, here is my process for when the build step fails:
@@ -261,29 +218,6 @@ markdown = true
 ```sh
 tectonic book/latex/MY_BOOK.tex
 
-note: this is a BETA release; ask questions and report bugs at https://tectonic.newton.cx/
-Running TeX ...
-error: something bad happened inside TeX; its output follows:
-
-===============================================================================
-(MY_BOOK.tex
-.
-.
-.
-! LaTeX Error: Missing \begin{document}.
-
-See the LaTeX manual or LaTeX Companion for explanation.
-Type  H <return>  for immediate help.
- ...
-
-l.260 \clearpage
-
-No pages of output.
-Transcript written on MY_BOOK.log.
-===============================================================================
-
-error: the TeX engine had an unrecoverable error
-caused by: halted on potentially-recoverable error as specified
 ```
 
 Aha! `! LaTeX Error: Missing \begin{document}.`
@@ -305,27 +239,3 @@ Is it an elegant approach? No. Does it work? Sometimes. Is it a pain? Always.
 If you're feeling especially adventurous, create an issue or get in touch with me ([liam@liambeckman.com](mailto:liam@liambeckman)) to help prevent the same errors in the future. I'm more than happy to work with you to get your document compiled!
 
 : ^ )
-
-## Status of Binary Releases
-
-- ✅ binary available
-- ❌ binary not available
-
-| Binary?   | Target                                                             |
-| --------- | ---------                                                          |
-| ❌        | [~~armv7-unknown-linux-gnueabihf~~][armv7-unknown-linux-gnueabihf] |
-| ❌        | [~~i686-pc-windows-gnu~~][i686-pc-windows-gnu]                     |
-| ❌        | [~~i686-unknown-linux-gnu~~][i686-unknown-linux-gnu]               |
-| ❌        | [~~x86_64-apple-darwin~~][x86_64-apple-darwin]                     |
-| ❌        | [~~x86_64-pc-windows-gnu~~][x86_64-pc-windows-gnu]                 |
-| ❌        | [~~x86_64-unknown-freebsd~~][x86_64-unknown-freebsd]               |
-| ✅        | [x86_64-unknown-linux-gnu][x86_64-unknown-linux-gnu]               |
-|           |                                                                    |
-
-[armv7-unknown-linux-gnueabihf]: https://github.com/lbeckman314/mdbook-tectonic/releases/
-[i686-pc-windows-gnu]: https://github.com/lbeckman314/mdbook-tectonic/releases/
-[i686-unknown-linux-gnu]: https://github.com/lbeckman314/mdbook-tectonic/releases/
-[x86_64-apple-darwin]: https://github.com/lbeckman314/mdbook-tectonic/releases/
-[x86_64-unknown-freebsd]: https://github.com/lbeckman314/mdbook-tectonic/releases/
-[x86_64-unknown-linux-gnu]: https://github.com/lbeckman314/mdbook-tectonic/releases/
-[x86_64-pc-windows-gnu]: https://github.com/lbeckman314/mdbook-tectonic/releases/leatest/mdbook-tectonic-v0.1.24-x86_64-unknown-linux-gnu.tar.gz

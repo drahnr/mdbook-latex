@@ -54,8 +54,12 @@ impl Default for LatexConfig {
 }
 
 #[derive(thiserror::Error, Debug)]
-#[error("Failed to parse STDIN as `RenderContext` JSON: {0:?}")]
-struct Error(#[from] mdbook::errors::Error);
+enum Error {
+    #[error("Failed to parse STDIN as `RenderContext` JSON: {0:?}")]
+    MdBook(mdbook::errors::Error),
+    #[error(transparent)]
+    Regex(#[from] regex::Error),
+}
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
@@ -63,12 +67,15 @@ fn main() -> color_eyre::Result<()> {
     use env_logger::Builder;
     use log::LevelFilter;
     let mut builder = Builder::from_default_env();
-    builder.filter(None, LevelFilter::Debug).init();
+    builder
+        .filter(None, LevelFilter::Debug)
+        .filter(Some("cmark2tex"), LevelFilter::Warn)
+        .init();
 
     let stdin = BufReader::new(io::stdin());
 
     // Get markdown source from the mdbook command via stdin
-    let ctx = RenderContext::from_json(stdin).map_err(Error)?;
+    let ctx = RenderContext::from_json(stdin).map_err(Error::MdBook)?;
 
     let compiled_against = semver::VersionReq::parse(mdbook::MDBOOK_VERSION)?;
     let running_against = semver::Version::parse(ctx.version.as_str())?;
@@ -83,6 +90,8 @@ fn main() -> color_eyre::Result<()> {
             ctx.version
         );
     }
+
+    log::debug!("mdbook-tectonic called from {}!", std::env::current_dir().unwrap().display());
 
     // Get configuration options from book.toml.
     let cfg: LatexConfig = ctx
