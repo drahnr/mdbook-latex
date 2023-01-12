@@ -91,7 +91,10 @@ fn main() -> color_eyre::Result<()> {
         );
     }
 
-    log::debug!("mdbook-tectonic called from {}!", std::env::current_dir().unwrap().display());
+    log::debug!(
+        "mdbook-tectonic called from {}!",
+        std::env::current_dir().unwrap().display()
+    );
 
     // Get configuration options from book.toml.
     let cfg: LatexConfig = ctx
@@ -287,27 +290,20 @@ fn parse_image_tag<'a>(
     context: &'a RenderContext,
 ) -> std::io::Result<Tag<'a>> {
     // cleaning and converting the path found.
-    let pathstr: String = path.replace("./", "");
-    let imagefn = dbg!(Path::new(&pathstr));
-    // creating the source path of the mdbook
-    let source = dbg!(&context.root).join(dbg!(&context.config.book.src));
-    // creating the relative path of the image by prepending the chapterpath
+    let imagefn = dbg!(path.as_ref().strip_prefix("./").unwrap_or(path.as_ref()));
+    let source = dbg!(&context.config.book.src).join(imagefn);
+    let sourceimage = dbg!(&context.root).join(&source);
+    let targetimage = dbg!(&context.destination).join(&source);
 
-    // let relpath = chapter_path.join(imagefn);
-    // creating the path of the imagesource
-    let sourceimage = source.join(&imagefn);
-    // creating the relative path for the image tag in markdown
-    let imagepath = Path::new("images").join(&relpath);
-    // creating the path where the image will be copied to
-    let targetimage = dbg!(&context.destination).join(&imagepath);
-
-    // // creating the directory if neccessary
-    fs::create_dir_all(targetimage.parent().unwrap())?;
-    // copy the image
-    fs::copy(&sourceimage, &targetimage)?;
-
-    log::debug!("Copying {} -> {}", sourceimage.display(), targetimage.display());
+    if sourceimage != targetimage {
+        log::debug!(
+            "Copying {} -> {}",
+            sourceimage.display(),
+            targetimage.display()
+        );
+        fs::create_dir_all(dbg!(targetimage.parent().unwrap()))?;
+        fs::copy(&sourceimage, &targetimage)?;
+    }
     // create the new image
-    let imagepathc = imagepath.to_str().unwrap().to_owned();
-    Ok(Tag::Image(link_type, imagepathc.into(), title))
+    Ok(Tag::Image(link_type, imagefn.to_owned().into(), title))
 }

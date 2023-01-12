@@ -1,7 +1,7 @@
 use super::*;
+use assert_matches::assert_matches;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
-use assert_matches::assert_matches;
 
 #[test]
 fn test_traverse_markdown() {
