@@ -29,3 +29,7 @@ thiserror = "1"
 regex = "1"
 log = "0.4"
 env_logger = "0.10"
+
+
+[dev-dependencies]
+assert_matches = "1"
